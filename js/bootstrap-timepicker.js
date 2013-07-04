@@ -339,7 +339,108 @@
     },
     getHour: function() { return this.hour;},
     getMinute: function() { return this.minute;},
-    getSecond: function() { return this.second;},
+    getSecond: function () { return this.second; },
+    getFormattedTime: function(format){
+
+        format = (format) ? format : "24";
+        var time; 
+        var hour, minute, second, meridian; 
+
+        hour = this.hour; 
+        minute = this.minute; 
+        second = this.second;
+        meridian = (this.showMeridian) ? this.meridian : null; 
+
+        time = this.parseObjectToTime(hour, minute, second, meridian, format);
+        return time; 
+
+    }, 
+
+    formatTimeToObject: function(time, format){
+        
+        var arr,
+        timeArray, timeType, meridian;
+
+        arr = time.split(' ');
+        if (arr[1]) arr[1] = (arr[1]) ? arr[1].toUpperCase() : arr[1];
+
+        if (arr[1] && (arr[1].indexOf("AM") != -1 || arr[1].indexOf("PM") != -1
+            || arr[1].indexOf("A") != -1 || arr[1].indexOf("P") != -1)) {
+            
+            timeArray = arr[0].split(':');
+            meridian = arr[1];
+
+            meridian = (meridian == "P") ? "PM" : meridian;
+            meridian = (meridian == "A") ? "AM" : meridian; 
+
+            timeType = "12";
+        } else {
+            timeArray = time.split(':');
+            timeType = "24";
+        }
+
+        if (format == "12") {
+            if (timeType == "24") {
+                var hour = parseInt(timeArray[0], 10);
+                if (hour >= 12) {
+                    if (hour > 12) hour = hour - 12;
+                    meridian = "PM";
+                } else {
+                    if (hour == 0) hour = 12;
+                    meridian = "AM";
+                }
+
+                timeArray[0] = hour;
+            }
+        } else if (format == "24") {
+            if (timeType == "12") {
+                var hour = parseInt(timeArray[0], 10);
+                if (meridian == "PM") {
+                    if (hour != 12) hour = hour + 12;
+                }
+                else if (meridian == "AM" && hour == 12) {
+                    hour = 0;
+                }
+
+                timeArray[0] = hour;
+            }
+            meridian = null;
+        }
+
+        return { hour: parseInt(timeArray[0], 10), minute: parseInt(timeArray[1], 10), second: parseInt(timeArray[2], 10), meridian: meridian }; 
+
+    },
+
+    parseObjectToTime: function(hour, minute, second, meridian, format){
+        
+        if (meridian) {
+            if (format == "24") {
+                if (meridian == "PM") {
+                    if (hour != 12) hour = hour + 12;
+                }
+                else if (meridian == "AM") {
+                    if (hour == 12) hour = 0;
+                }
+            }
+        } else {
+            if (format == "12") {
+                if (hour >= 12) {
+                    if (hour > 12) hour = hour - 12;
+                    meridian = "PM";
+                } else {
+                    if (hour == 0) hour = 12;
+                    meridian = "AM";
+                }
+            }
+        }
+
+        hour = hour < 10 ? '0' + hour : hour;
+        minute = minute < 10 ? '0' + minute : minute;
+        second = second < 10 ? '0' + second : second;
+
+        return (hour + ':' + minute + (this.showSeconds ? ':' + second : '') + (format == "12" ? ' ' + meridian : '')).trim();
+
+    }, 
 
     hideWidget: function() {
       if (this.isOpen === false) {
@@ -591,19 +692,56 @@
 
     setTime: function(time) {
       var arr,
-        timeArray;
+        timeArray, timeType;
 
-      if (this.showMeridian) {
-        arr = time.split(' ');
-        timeArray = arr[0].split(':');
-        this.meridian = arr[1];
-      } else {
-        timeArray = time.split(':');
-      }
+      //if ((time.indexOf("AM")!=-1 || time.indexOf("PM")!=-1)) {
+      //  arr = time.split(' ');
+      //  timeArray = arr[0].split(':');
+      //  this.meridian = arr[1];
 
-      this.hour = parseInt(timeArray[0], 10);
-      this.minute = parseInt(timeArray[1], 10);
-      this.second = parseInt(timeArray[2], 10);
+      //  timeType = "12"; 
+      //} else {
+      //    timeArray = time.split(':');
+      //    timeType = "24";
+      //}
+      
+      //if (this.showMeridian) {
+      //    if (timeType == "24") {
+      //        var hour = parseInt(timeArray[0], 10);
+      //        if (hour >= 12) {
+      //            if (hour > 12) hour = hour - 12;
+      //            this.meridian = "PM"; 
+      //        } else {
+      //            if (hour == 0) hour = 12;
+      //            this.meridian = "AM"; 
+      //        }
+
+      //        timeArray[0] = hour;
+      //    }
+      //} else {
+      //    if (timeType == "12") {
+      //        var hour = parseInt(timeArray[0], 10);
+      //        if (time.indexOf("PM") != -1) {
+      //            if (hour != 12) hour = hour + 12;
+      //        }
+      //        else if (time.indexOf("AM") && hour == 12) {
+      //            hour = 0; 
+      //        }
+
+      //        timeArray[0] = hour;
+      //    }
+      //}
+
+      //this.hour = parseInt(timeArray[0], 10);
+      //this.minute = parseInt(timeArray[1], 10);
+      //this.second = parseInt(timeArray[2], 10);
+
+      var formattedTime = this.formatTimeToObject(time, (this.showMeridian) ? "12" : "24"); 
+      
+      this.hour = formattedTime.hour;
+      this.minute = formattedTime.minute;
+      this.second = formattedTime.second;
+      this.meridian = formattedTime.meridian; 
 
       if (isNaN(this.hour)) {
         this.hour = 0;
